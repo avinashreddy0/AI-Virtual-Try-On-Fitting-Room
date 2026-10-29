@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Fit - Live Try-On</title>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: #08090c;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 540px;
+  margin: auto;
+  overflow: hidden;
+  background: #17171b;
+}
+
+#camera, #overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#camera {
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+#overlay {
+  z-index: 2;
+  pointer-events: none;
+}
+
+header {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(#000c, transparent);
+}
+
+button {
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn {
+  padding: 9px 12px;
+  border: 1px solid #ffffff55;
+  border-radius: 24px;
+  background: #16161ddd;
+}
+
+#status {
+  position: absolute;
+  z-index: 5;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 94%;
+  padding: 10px 13px;
+  border-radius: 20px;
+  background: #111d;
+  font-size: 12px;
+  text-align: center;
+}
+
+#message {
+  display: none;
+  position: absolute;
+  z-index: 8;
+  top: 115px;
+  left: 12px;
+  right: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #762c2c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#bottom {
+  position: absolute;
+  z-index: 5;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 32px 12px 18px;
+  background: linear-gradient(transparent, #050507f5 35%);
+}
+
+.note {
+  text-align: center;
+  font-size: 12px;
+  color: #eee;
+}
+
+#catalog {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  padding: 12px 2px;
+  scrollbar-width: thin;
+}
+
+.outfit {
+  flex: 0 0 86px;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border: 1px solid #ffffff55;
+  border-radius: 13px;
+  background: #ffffff13;
+  font-size: 10px;
+  text-align: center;
+}
+
+.outfit.active {
+  border: 2px solid #e7ff57;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.swatch-split {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+}
+
+#capture {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  color: #111;
+  background: #e7ff57;
+  font-weight: bold;
+}
+
+@media (max-width: 400px) {
+  .outfit { flex-basis: 74px; }
+  #status { font-size: 10px; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <video id="camera" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <header>
+    <button class="btn" id="reset">Reset</button>
+    <strong>VIRTUAL FIT</strong>
+    <button class="btn" id="flip">↻ Camera</button>
+  </header>
+
+  <div id="status">Starting camera and body tracker...</div>
+  <div id="message"></div>
+
+  <div id="bottom">
+    <div class="note">
+      Select an outfit: T-Shirts, Hoodies, Jackets or Full Sets
+    </div>
+    <div id="catalog"></div>
+    <button id="capture">Capture Look</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+
+<script>
+const video = document.getElementById("camera");
+const canvas = document.getElementById("overlay");
+const ctx = canvas.getContext("2d");
+const app = document.getElementById("app");
+const statusBox = document.getElementById("status");
+const messageBox = document.getElementById("message");
+
+/* ===================== OUTFIT CATALOG ===================== */
+
+const outfits = [
+  {
+    name: "Cream Hoodie",
+    color: "#d9cbb6", dark: "#99876e",
+    hasHood: true, hasPants: false,
+    sleeveType: "long", type: "hoodie"
+  },
+  {
+    name: "Black Tee",
+    color: "#292a30", dark: "#101115",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "tee"
+  },
+  {
+    name: "White Tee + Jeans",
+    color: "#f0f0ec", dark: "#bfc1c4",
+    pantsColor: "#2b4c7e", pantsDark: "#1a2f50",
+    pantsStyle: "jeans",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set", pattern: "logo"
+  },
+  {
+    name: "Blue Oxford Shirt",
+    color: "#315b8c", dark: "#183858",
+    hasHood: false, hasPants: false,
+    sleeveType: "long", type: "shirt"
+  },
+  {
+    name: "Suit + Trousers",
+    color: "#26364d", dark: "#101827",
+    pantsColor: "#1e2b3e", pantsDark: "#0d141e",
+    pantsStyle: "formal",
+    hasHood: false, hasPants: true,
+    sleeveType: "long", type: "suit"
+  },
+  {
+    name: "Olive Hoodie",
+    color: "#69755a", dark: "#414a36",
+    hasHood: true, hasPants: false,
+    sleeveType: "long", type: "hoodie"
+  },
+  {
+    name: "Pink Boxy Tee",
+    color: "#d78fa0", dark: "#a75d70",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "tee"
+  },
+  {
+    name: "Navy Tracksuit",
+    color: "#1e293b", dark: "#0f172a",
+    pantsColor: "#1e293b", pantsDark: "#0f172a",
+    pantsStyle: "joggers",
+    hasHood: true, hasPants: true,
+    sleeveType: "long", type: "full-set"
+  },
+  {
+    name: "Red Graphic Tee",
+    color: "#bd3444", dark: "#7d1f2c",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "tee", pattern: "graphic"
+  },
+  {
+    name: "Grey Tee + Black Jeans",
+    color: "#a7a9ad", dark: "#6b6e73",
+    pantsColor: "#202126", pantsDark: "#101115",
+    pantsStyle: "jeans",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set", pattern: "logo"
+  },
+  {
+    name: "Yellow Sport Tee",
+    color: "#e4bd36", dark: "#a98618",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "tee", pattern: "sport"
+  },
+  {
+    name: "Orange Tee + Cargo",
+    color: "#d87936", dark: "#8f4720",
+    pantsColor: "#626b4c", pantsDark: "#3d442e",
+    pantsStyle: "cargo",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set", pattern: "graphic"
+  },
+  {
+    name: "Purple Oversized Tee",
+    color: "#7855a6", dark: "#49316d",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "oversized", pattern: "graphic"
+  },
+  {
+    name: "Cream Sweatshirt",
+    color: "#d9d4c9", dark: "#a6a094",
+    pantsColor: "#65676e", pantsDark: "#3d3f45",
+    pantsStyle: "joggers",
+    hasHood: false, hasPants: true,
+    sleeveType: "long", type: "full-set"
+  },
+  {
+    name: "Denim Jacket + Jeans",
+    color: "#416b9b", dark: "#233f63",
+    pantsColor: "#263f64", pantsDark: "#172842",
+    pantsStyle: "jeans",
+    hasHood: false, hasPants: true,
+    sleeveType: "long", type: "jacket"
+  },
+  {
+    name: "White Shirt + Formal",
+    color: "#eeeae0", dark: "#b9b5ac",
+    pantsColor: "#282b33", pantsDark: "#14161b",
+    pantsStyle: "formal",
+    hasHood: false, hasPants: true,
+    sleeveType: "long", type: "shirt"
+  },
+  {
+    name: "Green Tee + Shorts",
+    color: "#43815b", dark: "#285238",
+    pantsColor: "#292d35", pantsDark: "#17191e",
+    pantsStyle: "shorts",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set"
+  },
+  {
+    name: "Black Hoodie + Cargo",
+    color: "#292a30", dark: "#101115",
+    pantsColor: "#555d45", pantsDark: "#343a2a",
+    pantsStyle: "cargo",
+    hasHood: true, hasPants: true,
+    sleeveType: "long", type: "full-set"
+  },
+  {
+    name: "Mint Tee + Chinos",
+    color: "#8ccbbb", dark: "#4d9584",
+    pantsColor: "#b8a47f", pantsDark: "#887653",
+    pantsStyle: "formal",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set", pattern: "logo"
+  },
+  {
+    name: "Blue Tee + Joggers",
+    color: "#377eb8", dark: "#1d4e78",
+    pantsColor: "#777a82", pantsDark: "#4b4d53",
+    pantsStyle: "joggers",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set"
+  },
+  {
+    name: "Maroon Hoodie + Joggers",
+    color: "#793443", dark: "#4b1e28",
+    pantsColor: "#222329", pantsDark: "#111216",
+    pantsStyle: "joggers",
+    hasHood: true, hasPants: true,
+    sleeveType: "long", type: "full-set"
+  },
+  {
+    name: "Striped Tee",
+    color: "#f0eee8", dark: "#b8b5ae",
+    hasHood: false, hasPants: false,
+    sleeveType: "short", type: "tee", pattern: "stripes"
+  },
+  {
+    name: "All-Black Outfit",
+    color: "#24252a", dark: "#101115",
+    pantsColor: "#15161a", pantsDark: "#08090b",
+    pantsStyle: "cargo",
+    hasHood: false, hasPants: true,
+    sleeveType: "short", type: "full-set", pattern: "graphic"
+  }
+];
+
+let selected = 1;
+let tracker = null;
+let stream = null;
+let facing = "user";
+let cameraStarted = false;
+let processing = false;
+let latestLandmarks = null;
+let frameRequest = null;
+
+const smoothed = {};
+
+function smoothPoint(name, target, factor = 0.4) {
+  if (!smoothed[name]) {
+    smoothed[name] = { x: target.x, y: target.y };
+  } else {
+    smoothed[name].x += (target.x - smoothed[name].x) * factor;
+    smoothed[name].y += (target.y - smoothed[name].y) * factor;
+  }
+  return smoothed[name];
+}
+
+function showMessage(text) {
+  messageBox.textContent = text;
+  messageBox.style.display = "block";
+}
+
+function hideMessage() {
+  messageBox.style.display = "none";
+}
+
+/* ===================== CANVAS ===================== */
+
+function resizeCanvas() {
+  const rect = app.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  canvas.style.width = rect.width + "px";
+  canvas.style.height = rect.height + "px";
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  redraw();
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+function clearOverlay() {
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+}
+
+function redraw() {
+  clearOverlay();
+  if (latestLandmarks) {
+    drawClothingAndPants(latestLandmarks);
+  }
+}
+
+/* ===================== OUTFIT CAROUSEL ===================== */
+
+function renderCatalog() {
+  const catalog = document.getElementById("catalog");
+  catalog.innerHTML = "";
+
+  outfits.forEach((outfit, index) => {
+    const button = document.createElement("button");
+    button.className = "outfit" + (index === selected ? " active" : "");
+
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = outfit.color;
+
+    if (outfit.hasPants) {
+      const pantsBar = document.createElement("span");
+      pantsBar.className = "swatch-split";
+      pantsBar.style.background = outfit.pantsColor;
+      swatch.appendChild(pantsBar);
+    }
+
+    const name = document.createElement("span");
+    name.textContent = outfit.name;
+
+    button.append(swatch, name);
+
+    button.addEventListener("click", () => {
+      selected = index;
+      renderCatalog();
+      redraw();
+      statusBox.textContent = outfit.name + " selected";
+    });
+
+    catalog.appendChild(button);
+  });
+}
+
+renderCatalog();
+resizeCanvas();
+
+/* ===================== CAMERA ===================== */
+
+async function startCamera() {
+  cameraStarted = false;
+  hideMessage();
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Open this page using localhost or HTTPS.");
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: facing,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    });
+
+    video.srcObject = stream;
+
+    await new Promise((resolve, reject) => {
+      if (video.readyState >= 2 && video.videoWidth) {
+        resolve();
+        return;
+      }
+      video.onloadedmetadata = () => resolve();
+      video.onerror = () => reject(new Error("Camera video failed to load."));
+    });
+
+    await video.play();
+
+    cameraStarted = true;
+    latestLandmarks = null;
+    statusBox.textContent = "Camera ready · Stand so body is visible";
+
+  } catch (error) {
+    console.error(error);
+    showMessage("Camera error: " + error.message);
+    statusBox.textContent = "Camera unavailable";
+  }
+}
+
+/* ===================== COORDINATE CONVERSION ===================== */
+
+function point(landmark) {
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  if (!vw || !vh) {
+    return { x: (1 - landmark.x) * W, y: landmark.y * H };
+  }
+
+  const scale = Math.max(W / vw, H / vh);
+  const renderedW = vw * scale;
+  const renderedH = vh * scale;
+  const cropX = (renderedW - W) / 2;
+  const cropY = (renderedH - H) / 2;
+
+  return {
+    x: W - (landmark.x * renderedW - cropX),
+    y: landmark.y * renderedH - cropY
+  };
+}
+
+/* ===================== DRAWING HELPERS ===================== */
+
+function drawPolygon(points, fill, stroke) {
+  if (!points || points.length < 3) return;
+  if (points.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y))) return;
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+function drawSleeve(shoulder, elbow, wrist, width, color, dark, sleeveType) {
+  const dx = elbow.x - shoulder.x;
+  const dy = elbow.y - shoulder.y;
+  const len = Math.hypot(dx, dy);
+
+  if (len < 2) return;
+
+  const px = -dy / len;
+  const py = dx / len;
+  const shoulderHalf = width * 0.75;
+  const elbowHalf = width * 0.48;
+
+  if (sleeveType === "short") {
+    const cuffCenter = {
+      x: shoulder.x + dx * 0.55,
+      y: shoulder.y + dy * 0.55
+    };
+
+    const cuffHalf = width * 0.45;
+
+    drawPolygon([
+      { x: shoulder.x + px * shoulderHalf, y: shoulder.y + py * shoulderHalf },
+      { x: cuffCenter.x + px * cuffHalf, y: cuffCenter.y + py * cuffHalf },
+      { x: cuffCenter.x - px * cuffHalf, y: cuffCenter.y - py * cuffHalf },
+      { x: shoulder.x - px * shoulderHalf, y: shoulder.y - py * shoulderHalf }
+    ], color, dark);
+
+    return;
+  }
+
+  let end = wrist;
+
+  if (!end) {
+    end = {
+      x: elbow.x + dx * 0.65,
+      y: elbow.y + dy * 0.65
+    };
+  }
+
+  const ex = end.x - elbow.x;
+  const ey = end.y - elbow.y;
+  const endLen = Math.hypot(ex, ey);
+  const qx = endLen > 2 ? -ey / endLen : px;
+  const qy = endLen > 2 ? ex / endLen : py;
+  const cuffHalf = width * 0.35;
+
+  drawPolygon([
+    { x: shoulder.x + px * shoulderHalf, y: shoulder.y + py * shoulderHalf },
+    { x: elbow.x + px * elbowHalf, y: elbow.y + py * elbowHalf },
+    { x: end.x + qx * cuffHalf, y: end.y + qy * cuffHalf },
+    { x: end.x - qx * cuffHalf, y: end.y - qy * cuffHalf },
+    { x: elbow.x - px * elbowHalf, y: elbow.y - py * elbowHalf },
+    { x: shoulder.x - px * shoulderHalf, y: shoulder.y - py * shoulderHalf }
+  ], color, dark);
+}
+
+/* ===================== PANTS RENDERER ===================== */
+
+function drawPants(LH, RH, landmarks, shoulderWidth, outfit) {
+  const visible = i =>
+    landmarks[i] && (landmarks[i].visibility ?? 1) > 0.35;
+
+  const rawLK = visible(25) ? point(landmarks[25]) : null;
+  const rawRK = visible(26) ? point(landmarks[26]) : null;
+  const rawLA = visible(27) ? point(landmarks[27]) : null;
+  const rawRA = visible(28) ? point(landmarks[28]) : null;
+
+  const defaultLegLen = shoulderWidth * 1.6;
+
+  const LK = rawLK ? smoothPoint("lk", rawLK) :
+    { x: LH.x, y: LH.y + defaultLegLen * 0.5 };
+
+  const RK = rawRK ? smoothPoint("rk", rawRK) :
+    { x: RH.x, y: RH.y + defaultLegLen * 0.5 };
+
+  const LA = rawLA ? smoothPoint("la", rawLA) :
+    { x: LK.x, y: LK.y + defaultLegLen * 0.5 };
+
+  const RA = rawRA ? smoothPoint("ra", rawRA) :
+    { x: RK.x, y: RK.y + defaultLegLen * 0.5 };
+
+  const hipWidth =
+    Math.hypot(RH.x - LH.x, RH.y - LH.y) || shoulderWidth * 0.8;
+
+  const thighThick =
+    hipWidth * (outfit.pantsStyle === "cargo" ? 0.43 : 0.36);
+
+  const ankleThick =
+    hipWidth * (outfit.pantsStyle === "joggers" ? 0.28 : 0.24);
+
+  const pColor = outfit.pantsColor || "#1e293b";
+  const pDark = outfit.pantsDark || "#0f172a";
+  const centerX = (LH.x + RH.x) / 2;
+  const crotchY = (LH.y + RH.y) / 2 + hipWidth * 0.20;
+
+  const isShorts = outfit.pantsStyle === "shorts";
+
+  const leftEnd = isShorts
+    ? {
+        x: LH.x + (LK.x - LH.x) * 0.52,
+        y: LH.y + (LK.y - LH.y) * 0.52
+      }
+    : LA;
+
+  const rightEnd = isShorts
+    ? {
+        x: RH.x + (RK.x - RH.x) * 0.52,
+        y: RH.y + (RK.y - RH.y) * 0.52
+      }
+    : RA;
+
+  const leftKnee = isShorts ? leftEnd : LK;
+  const rightKnee = isShorts ? rightEnd : RK;
+
+  ctx.save();
+
+  drawPolygon([
+    { x: LH.x - thighThick * 0.7, y: LH.y },
+    { x: leftKnee.x - thighThick * 0.6, y: leftKnee.y },
+    {
+      x: leftEnd.x - (isShorts ? thighThick * 0.35 : ankleThick),
+      y: leftEnd.y
+    },
+    {
+      x: leftEnd.x + (isShorts ? thighThick * 0.35 : ankleThick * 0.6),
+      y: leftEnd.y
+    },
+    { x: leftKnee.x + thighThick * 0.3, y: leftKnee.y },
+    { x: centerX, y: crotchY }
+  ], pColor, pDark);
+
+  drawPolygon([
+    { x: centerX, y: crotchY },
+    { x: rightKnee.x - thighThick * 0.3, y: rightKnee.y },
+    {
+      x: rightEnd.x - (isShorts ? thighThick * 0.35 : ankleThick * 0.6),
+      y: rightEnd.y
+    },
+    {
+      x: rightEnd.x + (isShorts ? thighThick * 0.35 : ankleThick),
+      y: rightEnd.y
+    },
+    { x: rightKnee.x + thighThick * 0.6, y: rightKnee.y },
+    { x: RH.x + thighThick * 0.7, y: RH.y }
+  ], pColor, pDark);
+
+  // Waist/fly seam
+  ctx.beginPath();
+  ctx.moveTo(centerX, (LH.y + RH.y) / 2);
+  ctx.lineTo(centerX, crotchY);
+  ctx.strokeStyle = "#ffffff44";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Cargo pockets
+  if (outfit.pantsStyle === "cargo") {
+    ctx.strokeStyle = "#ffffff66";
+    ctx.lineWidth = 1.5;
+
+    ctx.strokeRect(
+      LH.x - hipWidth * 0.22,
+      LH.y + hipWidth * 0.55,
+      hipWidth * 0.25,
+      hipWidth * 0.34
+    );
+
+    ctx.strokeRect(
+      RH.x - hipWidth * 0.03,
+      RH.y + hipWidth * 0.55,
+      hipWidth * 0.25,
+      hipWidth * 0.34
+    );
+  }
+
+  // Jogger ankle cuffs
+  if (outfit.pantsStyle === "joggers" && !isShorts) {
+    ctx.strokeStyle = pDark;
+    ctx.lineWidth = Math.max(3, hipWidth * 0.07);
+
+    ctx.beginPath();
+    ctx.moveTo(LA.x - ankleThick, LA.y);
+    ctx.lineTo(LA.x + ankleThick, LA.y);
+    ctx.moveTo(RA.x - ankleThick, RA.y);
+    ctx.lineTo(RA.x + ankleThick, RA.y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ===================== MAIN CLOTHING ENGINE ===================== */
+
+function drawClothingAndPants(landmarks) {
+  if (!landmarks || landmarks.length < 25) return false;
+
+  const visible = i =>
+    landmarks[i] && (landmarks[i].visibility ?? 1) > 0.3;
+
+  if (!visible(11) && !visible(12)) return false;
+
+  const rawLS = point(landmarks[11] || landmarks[12]);
+  const rawRS = point(landmarks[12] || landmarks[11]);
+
+  const LS = smoothPoint("ls", rawLS);
+  const RS = smoothPoint("rs", rawRS);
+
+  const rawShoulderWidth =
+    Math.hypot(RS.x - LS.x, RS.y - LS.y);
+
+  const zLeft = landmarks[11]?.z || 0;
+  const zRight = landmarks[12]?.z || 0;
+  const turnIntensity = Math.abs(zLeft - zRight);
+  const isTurned = turnIntensity > 0.35 || rawShoulderWidth < 60;
+
+  const shoulderWidth = Math.max(rawShoulderWidth, 40);
+  const outfit = outfits[selected];
+
+  const center = {
+    x: (LS.x + RS.x) / 2,
+    y: (LS.y + RS.y) / 2
+  };
+
+  const ux = (RS.x - LS.x) / (rawShoulderWidth || 1);
+  const uy = (RS.y - LS.y) / (rawShoulderWidth || 1);
+
+  const hipsVisible = visible(23) || visible(24);
+
+  let LH = null;
+  let RH = null;
+  let downX = 0;
+  let downY = 1;
+  let torsoLength = shoulderWidth * 1.45;
+
+  if (hipsVisible) {
+    const rawLH = landmarks[23]
+      ? point(landmarks[23])
+      : point(landmarks[24]);
+
+    const rawRH = landmarks[24]
+      ? point(landmarks[24])
+      : point(landmarks[23]);
+
+    LH = smoothPoint("lh", rawLH);
+    RH = smoothPoint("rh", rawRH);
+
+    const hipCenter = {
+      x: (LH.x + RH.x) / 2,
+      y: (LH.y + RH.y) / 2
+    };
+
+    const dx = hipCenter.x - center.x;
+    const dy = hipCenter.y - center.y;
+    const len = Math.hypot(dx, dy);
+
+    if (len > 30) {
+      downX = dx / len;
+      downY = dy / len;
+      torsoLength = Math.max(len, shoulderWidth * 1.35);
+    }
+  }
+
+  if (downY < 0) {
+    downX *= -1;
+    downY *= -1;
+  }
+
+  let sideX = downY;
+  let sideY = -downX;
+
+  if (sideX * ux + sideY * uy < 0) {
+    sideX *= -1;
+    sideY *= -1;
+  }
+
+  // Head and nose calculations
+  const noseRaw = visible(0)
+    ? point(landmarks[0])
+    : { x: center.x, y: center.y - shoulderWidth * 0.6 };
+
+  const nose = smoothPoint("nose", noseRaw);
+
+  const earL = visible(7)
+    ? smoothPoint("earL", point(landmarks[7]))
+    : null;
+
+  const earR = visible(8)
+    ? smoothPoint("earR", point(landmarks[8]))
+    : null;
+
+  let headRadius = shoulderWidth * 0.32;
+  let headCenterX = nose.x;
+  let headCenterY = nose.y - headRadius * 0.7;
+
+  if (earL && earR) {
+    headCenterX = (earL.x + earR.x) / 2;
+    headRadius = Math.max(
+      headRadius,
+      Math.hypot(earR.x - earL.x, earR.y - earL.y) * 0.72
+    );
+    headCenterY = (earL.y + earR.y) / 2 - headRadius * 0.55;
+  }
+
+  // Neck anchor
+  const neckBaseX = nose.x + (center.x - nose.x) * 0.8;
+  const neckBaseY = nose.y + (center.y - nose.y) * 0.8;
+
+  const neckBase = smoothPoint("neckBase", {
+    x: neckBaseX,
+    y: neckBaseY
+  });
+
+  const neckRadius = shoulderWidth * 0.17;
+
+  const neckLeft = {
+    x: neckBase.x - sideX * neckRadius,
+    y: neckBase.y - sideY * neckRadius
+  };
+
+  const neckRight = {
+    x: neckBase.x + sideX * neckRadius,
+    y: neckBase.y + sideY * neckRadius
+  };
+
+  // Shoulder coverage
+  const shoulderPadding = shoulderWidth * 0.28;
+
+  const shoulderOuterLeft = {
+    x: LS.x - sideX * shoulderPadding + downX * shoulderWidth * 0.05,
+    y: LS.y - sideY * shoulderPadding + downY * shoulderWidth * 0.05
+  };
+
+  const shoulderOuterRight = {
+    x: RS.x + sideX * shoulderPadding + downX * shoulderWidth * 0.05,
+    y: RS.y + sideY * shoulderPadding + downY * shoulderWidth * 0.05
+  };
+
+  const trapeziusPeakLeft = {
+    x: neckLeft.x - sideX * shoulderWidth * 0.1 - downX * shoulderWidth * 0.08,
+    y: neckLeft.y - sideY * shoulderWidth * 0.1 - downY * shoulderWidth * 0.08
+  };
+
+  const trapeziusPeakRight = {
+    x: neckRight.x + sideX * shoulderWidth * 0.1 - downX * shoulderWidth * 0.08,
+    y: neckRight.y + sideY * shoulderWidth * 0.1 - downY * shoulderWidth * 0.08
+  };
+
+  const bottomCenter = hipsVisible
+    ? {
+        x: (LH.x + RH.x) / 2,
+        y: (LH.y + RH.y) / 2
+      }
+    : {
+        x: center.x + downX * torsoLength,
+        y: center.y + downY * torsoLength
+      };
+
+  const halfBottom = Math.max(shoulderWidth * 0.52, 35);
+
+  const bottomLeft = {
+    x: bottomCenter.x - sideX * halfBottom,
+    y: bottomCenter.y - sideY * halfBottom
+  };
+
+  const bottomRight = {
+    x: bottomCenter.x + sideX * halfBottom,
+    y: bottomCenter.y + sideY * halfBottom
+  };
+
+  ctx.save();
+
+  // 1. Draw pants when the selected outfit includes pants
+  if (outfit.hasPants) {
+    const hipL = LH || {
+      x: bottomLeft.x + 20,
+      y: bottomLeft.y
+    };
+
+    const hipR = RH || {
+      x: bottomRight.x - 20,
+      y: bottomRight.y
+    };
+
+    drawPants(hipL, hipR, landmarks, shoulderWidth, outfit);
+  }
+
+  // 2. Draw sleeves
+  if (visible(13) || visible(11)) {
+    const rawLE = landmarks[13]
+      ? point(landmarks[13])
+      : { x: LS.x - 50, y: LS.y + 120 };
+
+    const LE = smoothPoint("le", rawLE);
+
+    const LW = visible(15)
+      ? smoothPoint("lw", point(landmarks[15]))
+      : null;
+
+    drawSleeve(
+      LS, LE, LW, shoulderWidth * 0.42,
+      outfit.color, outfit.dark, outfit.sleeveType
+    );
+  }
+
+  if (visible(14) || visible(12)) {
+    const rawRE = landmarks[14]
+      ? point(landmarks[14])
+      : { x: RS.x + 50, y: RS.y + 120 };
+
+    const RE = smoothPoint("re", rawRE);
+
+    const RW = visible(16)
+      ? smoothPoint("rw", point(landmarks[16]))
+      : null;
+
+    drawSleeve(
+      RS, RE, RW, shoulderWidth * 0.42,
+      outfit.color, outfit.dark, outfit.sleeveType
+    );
+  }
+
+  // 3. Draw the upper body
+  if (outfit.hasHood) {
+    // Hoodie with connected hood
+    const hoodTop = {
+      x: headCenterX - downX * headRadius * 1.15,
+      y: headCenterY - downY * headRadius * 1.15
+    };
+
+    const hoodLeftOuter = {
+      x: headCenterX - sideX * headRadius * 1.25,
+      y: headCenterY - sideY * headRadius * 1.25
+    };
+
+    const hoodRightOuter = {
+      x: headCenterX + sideX * headRadius * 1.25,
+      y: headCenterY + sideY * headRadius * 1.25
+    };
+
+    const faceForehead = {
+      x: headCenterX - downX * headRadius * 0.45,
+      y: headCenterY - downY * headRadius * 0.45
+    };
+
+    const faceCheekLeft = {
+      x: headCenterX - sideX * headRadius * 0.75 + downX * headRadius * 0.2,
+      y: headCenterY - sideY * headRadius * 0.75 + downY * headRadius * 0.2
+    };
+
+    const faceCheekRight = {
+      x: headCenterX + sideX * headRadius * 0.75 + downX * headRadius * 0.2,
+      y: headCenterY + sideY * headRadius * 0.75 + downY * headRadius * 0.2
+    };
+
+    ctx.beginPath();
+    ctx.moveTo(bottomLeft.x, bottomLeft.y);
+    ctx.lineTo(shoulderOuterLeft.x, shoulderOuterLeft.y);
+    ctx.lineTo(trapeziusPeakLeft.x, trapeziusPeakLeft.y);
+
+    ctx.quadraticCurveTo(
+      trapeziusPeakLeft.x - sideX * headRadius * 0.3,
+      neckLeft.y,
+      hoodLeftOuter.x,
+      hoodLeftOuter.y
+    );
+
+    ctx.quadraticCurveTo(
+      hoodLeftOuter.x - downX * headRadius * 0.8,
+      hoodTop.y,
+      hoodTop.x,
+      hoodTop.y
+    );
+
+    ctx.quadraticCurveTo(
+      hoodRightOuter.x - downX * headRadius * 0.8,
+      hoodTop.y,
+      hoodRightOuter.x,
+      hoodRightOuter.y
+    );
+
+    ctx.quadraticCurveTo(
+      trapeziusPeakRight.x + sideX * headRadius * 0.3,
+      neckRight.y,
+      trapeziusPeakRight.x,
+      trapeziusPeakRight.y
+    );
+
+    ctx.lineTo(shoulderOuterRight.x, shoulderOuterRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
+
+    ctx.quadraticCurveTo(
+      bottomCenter.x,
+      bottomCenter.y + downY * 20,
+      bottomLeft.x,
+      bottomLeft.y
+    );
+
+    ctx.closePath();
+
+    const gradient = ctx.createLinearGradient(
+      hoodTop.x, hoodTop.y, bottomCenter.x, bottomCenter.y
+    );
+
+    gradient.addColorStop(0, outfit.dark);
+    gradient.addColorStop(0.3, outfit.color);
+    gradient.addColorStop(1, outfit.dark);
+
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = outfit.dark;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Face opening
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+
+    ctx.beginPath();
+    ctx.moveTo(neckBase.x, neckBase.y);
+
+    ctx.quadraticCurveTo(
+      faceCheekLeft.x,
+      faceCheekLeft.y + downY * 15,
+      faceCheekLeft.x,
+      faceCheekLeft.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekLeft.x,
+      faceForehead.y,
+      faceForehead.x,
+      faceForehead.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekRight.x,
+      faceForehead.y,
+      faceCheekRight.x,
+      faceCheekRight.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekRight.x,
+      faceCheekRight.y + downY * 15,
+      neckBase.x,
+      neckBase.y
+    );
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Hood border
+    ctx.beginPath();
+    ctx.moveTo(neckBase.x, neckBase.y);
+
+    ctx.quadraticCurveTo(
+      faceCheekLeft.x,
+      faceCheekLeft.y + downY * 15,
+      faceCheekLeft.x,
+      faceCheekLeft.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekLeft.x,
+      faceForehead.y,
+      faceForehead.x,
+      faceForehead.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekRight.x,
+      faceForehead.y,
+      faceCheekRight.x,
+      faceCheekRight.y
+    );
+
+    ctx.quadraticCurveTo(
+      faceCheekRight.x,
+      faceCheekRight.y + downY * 15,
+      neckBase.x,
+      neckBase.y
+    );
+
+    ctx.strokeStyle = outfit.dark;
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    // Hoodie strings
+    for (const s of [-1, 1]) {
+      const startX = neckBase.x + sideX * s * shoulderWidth * 0.05;
+      const startY = neckBase.y + downY * shoulderWidth * 0.04;
+
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+
+      ctx.lineTo(
+        startX + downX * shoulderWidth * 0.32,
+        startY + downY * shoulderWidth * 0.32
+      );
+
+      ctx.strokeStyle = "#ffffffdd";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+  } else {
+    // T-shirt, jacket, shirt or suit without a hood
+    const collarDip = {
+      x: neckBase.x + downX * shoulderWidth * 0.15,
+      y: neckBase.y + downY * shoulderWidth * 0.15
+    };
+
+    ctx.beginPath();
+    ctx.moveTo(neckLeft.x, neckLeft.y);
+    ctx.lineTo(trapeziusPeakLeft.x, trapeziusPeakLeft.y);
+    ctx.lineTo(shoulderOuterLeft.x, shoulderOuterLeft.y);
+    ctx.lineTo(bottomLeft.x, bottomLeft.y);
+
+    ctx.quadraticCurveTo(
+      bottomCenter.x,
+      bottomCenter.y + downY * 20,
+      bottomRight.x,
+      bottomRight.y
+    );
+
+    ctx.lineTo(shoulderOuterRight.x, shoulderOuterRight.y);
+    ctx.lineTo(trapeziusPeakRight.x, trapeziusPeakRight.y);
+    ctx.lineTo(neckRight.x, neckRight.y);
+
+    ctx.quadraticCurveTo(
+      collarDip.x,
+      collarDip.y,
+      neckLeft.x,
+      neckLeft.y
+    );
+
+    ctx.closePath();
+
+    const gradient = ctx.createLinearGradient(
+      neckBase.x, neckBase.y, bottomCenter.x, bottomCenter.y
+    );
+
+    gradient.addColorStop(0, outfit.color);
+    gradient.addColorStop(1, outfit.dark);
+
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = outfit.dark;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Collar
+    ctx.beginPath();
+    ctx.moveTo(neckLeft.x, neckLeft.y);
+
+    ctx.quadraticCurveTo(
+      collarDip.x,
+      collarDip.y,
+      neckRight.x,
+      neckRight.y
+    );
+
+    ctx.strokeStyle = outfit.dark;
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    // Shirt buttons / jacket front
+    if (
+      outfit.type === "shirt" ||
+      outfit.type === "suit" ||
+      outfit.type === "jacket"
+    ) {
+      ctx.beginPath();
+      ctx.moveTo(collarDip.x, collarDip.y);
+      ctx.lineTo(bottomCenter.x, bottomCenter.y);
+      ctx.strokeStyle = "#ffffff66";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Suit lapels
+    if (outfit.type === "suit") {
+      const tipLeft = {
+        x: collarDip.x - sideX * shoulderWidth * 0.12 +
+           downX * shoulderWidth * 0.18,
+        y: collarDip.y - sideY * shoulderWidth * 0.12 +
+           downY * shoulderWidth * 0.18
+      };
+
+      const tipRight = {
+        x: collarDip.x + sideX * shoulderWidth * 0.12 +
+           downX * shoulderWidth * 0.18,
+        y: collarDip.y - sideY * shoulderWidth * 0.12 +
+           downY * shoulderWidth * 0.18
+      };
+
+      drawPolygon(
+        [trapeziusPeakLeft, tipLeft, collarDip],
+        outfit.dark, "#ffffff33"
+      );
+
+      drawPolygon(
+        [trapeziusPeakRight, tipRight, collarDip],
+        outfit.dark, "#ffffff33"
+      );
+    }
+
+    // T-shirt graphics
+    const pattern = outfit.pattern || "plain";
+    const chestY = neckBase.y + downY * shoulderWidth * 0.48;
+
+    const chestCenter = {
+      x: center.x + downX * shoulderWidth * 0.48,
+      y: chestY
+    };
+
+    if (
+      pattern === "logo" ||
+      pattern === "graphic" ||
+      pattern === "sport"
+    ) {
+      ctx.save();
+
+      ctx.fillStyle = pattern === "sport"
+        ? "#ffffffdd"
+        : "#ffffffcc";
+
+      ctx.font = `bold ${Math.max(10, shoulderWidth * 0.12)}px Arial`;
+      ctx.textAlign = "center";
+
+      ctx.fillText(
+        pattern === "sport"
+          ? "SPORT"
+          : pattern === "logo"
+            ? "VF"
+            : "STYLE",
+        chestCenter.x,
+        chestCenter.y
+      );
+
+      if (pattern === "graphic") {
+        ctx.beginPath();
+
+        ctx.arc(
+          chestCenter.x,
+          chestCenter.y + shoulderWidth * 0.10,
+          Math.max(3, shoulderWidth * 0.045),
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+    } else if (pattern === "stripes") {
+      for (const offset of [-0.08, 0.02, 0.12]) {
+        const y = chestY + downY * shoulderWidth * offset;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          center.x - sideX * shoulderWidth * 0.30 +
+            downX * shoulderWidth * 0.48,
+          y - sideY * shoulderWidth * 0.30
+        );
+
+        ctx.lineTo(
+          center.x + sideX * shoulderWidth * 0.30 +
+            downX * shoulderWidth * 0.48,
+          y + sideY * shoulderWidth * 0.30
+        );
+
+        ctx.strokeStyle = "#3b4655aa";
+        ctx.lineWidth = Math.max(2, shoulderWidth * 0.025);
+        ctx.stroke();
+      }
+    }
+  }
+
+  ctx.restore();
+  return true;
+}
+
+/* ===================== MEDIAPIPE CALLBACK ===================== */
+
+function onResults(results) {
+  clearOverlay();
+
+  if (!results.poseLandmarks) {
+    latestLandmarks = null;
+    statusBox.textContent = "No body detected · Face the camera";
+    return;
+  }
+
+  latestLandmarks = results.poseLandmarks;
+
+  const drawn = drawClothingAndPants(latestLandmarks);
+
+  statusBox.textContent = drawn
+    ? "Fitted · " + outfits[selected].name
+    : "Keep body visible";
+}
+
+/* ===================== TRACKER SETUP ===================== */
+
+async function initializeTracker() {
+  if (typeof window.Pose === "undefined") {
+    showMessage("MediaPipe could not load. Check your internet connection.");
+    statusBox.textContent = "Body tracker unavailable";
+    return;
+  }
+
+  tracker = new window.Pose({
+    locateFile: file =>
+      "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/" + file
+  });
+
+  tracker.setOptions({
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+
+  tracker.onResults(onResults);
+
+  async function processFrame() {
+    if (
+      cameraStarted &&
+      video.readyState >= 2 &&
+      tracker &&
+      !processing
+    ) {
+      processing = true;
+
+      try {
+        await tracker.send({ image: video });
+      } catch (error) {
+        console.error("Tracking error:", error);
+      } finally {
+        processing = false;
+      }
+    }
+
+    frameRequest = requestAnimationFrame(processFrame);
+  }
+
+  if (!frameRequest) {
+    frameRequest = requestAnimationFrame(processFrame);
+  }
+}
+
+/* ===================== CAMERA FLIP ===================== */
+
+document.getElementById("flip").addEventListener("click", async () => {
+  facing = facing === "user" ? "environment" : "user";
+  await startCamera();
+});
+
+/* ===================== RESET ===================== */
+
+document.getElementById("reset").addEventListener("click", () => {
+  selected = 1;
+  renderCatalog();
+  redraw();
+  statusBox.textContent = outfits[1].name + " selected";
+});
+
+/* ===================== CAPTURE LOOK ===================== */
+
+document.getElementById("capture").addEventListener("click", () => {
+  if (!cameraStarted || video.readyState < 2) {
+    showMessage("Wait until the camera is ready.");
+    return;
+  }
+
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+
+  const output = document.createElement("canvas");
+  output.width = Math.round(W * dpr);
+  output.height = Math.round(H * dpr);
+
+  const out = output.getContext("2d");
+  out.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Mirror camera image to match the preview
+  out.save();
+  out.translate(W, 0);
+  out.scale(-1, 1);
+  out.drawImage(video, 0, 0, W, H);
+  out.restore();
+
+  // Add the virtual outfit overlay
+  out.drawImage(
+    canvas,
+    0, 0, canvas.width, canvas.height,
+    0, 0, W, H
+  );
+
+  const link = document.createElement("a");
+  link.download = "virtual-fit.png";
+  link.href = output.toDataURL("image/png");
+  link.click();
+});
+
+/* ===================== START APPLICATION ===================== */
+
+async function main() {
+  await startCamera();
+
+  if (cameraStarted) {
+    await initializeTracker();
+  }
+}
+
+main();
+</script>
+</body>
+</html>
