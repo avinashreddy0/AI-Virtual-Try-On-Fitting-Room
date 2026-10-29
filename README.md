@@ -1,184 +1,144 @@
-# 👕 AI Virtual Try-On Fitting Room | Virtual Fit
+# 👕 AI Virtual Try-On Fitting Room
 
-## 🖼️ Project Thumbnail
+A browser-based virtual clothing try-on application that allows users to preview different outfits using their webcam. The application uses body-pose tracking and canvas-based clothing overlays to create an interactive virtual fitting-room experience.
 
-<p align="center">
-  <img src="OutPut/Virtual%20Fit_%20Try%20On%20Your%20Style.png"
-       alt="Virtual Fit — AI Virtual Try-On Fitting Room"
-       width="100%"/>
-</p>
+## 📸 Project Preview
 
-<h3 align="center">✨ Try On Your Style. Virtually.</h3>
+![AI Virtual Try-On Fitting Room](OutPut/Virtual%20Fit_%20Try%20On%20Your%20Style.png)
 
-<p align="center">
-  👕 Virtual Outfits · 🧍 Pose Detection · 📷 Live Camera · 📸 Capture Your Look
-</p>
----
+## 📖 Overview
 
-## 📌 About the Project
+The **AI Virtual Try-On Fitting Room** is designed to make clothing previews more interactive and accessible. Users can activate their webcam, select clothing items, and view clothing overlays positioned according to their body pose.
 
-**AI Virtual Try-On Fitting Room — Virtual Fit** is a browser-based application designed to demonstrate virtual clothing try-on using computer vision and web technologies.
+The project combines web development, computer vision, pose estimation, and real-time visual rendering to demonstrate a virtual clothing try-on workflow.
 
-The application uses **MediaPipe Pose** to detect body landmarks and **HTML Canvas** to render virtual clothing overlays on the live camera feed. Users can select different outfits, preview clothing styles, switch cameras on supported devices, and capture their virtual look.
+> **Note:** This project is a 2D clothing-overlay prototype. It does not provide photorealistic 3D garment simulation or physically accurate fabric fitting.
 
-The project focuses on creating an interactive virtual fitting-room experience without requiring users to physically change clothes.
+## ✨ Features
 
-## 🎯 Project Objectives
+- 📷 **Live Camera Preview** — View yourself through your webcam.
+- 🧍 **Body Pose Tracking** — Use pose landmarks to estimate body position when pose detection is enabled.
+- 👕 **Multiple Clothing Options** — Preview available shirts, T-shirts, hoodies, jackets, and other supported outfits.
+- 🎨 **Interactive Outfit Selection** — Switch between clothing options.
+- 📐 **Body-Based Positioning** — Position clothing overlays using detected body landmarks.
+- 🔄 **Camera Controls** — Use the available camera switching and reset controls.
+- 📸 **Capture Preview** — Capture an image of the try-on preview if supported by the current implementation.
+- 🌐 **Browser-Based Application** — Run the project in a compatible web browser.
 
-- 👕 Allow users to preview different clothing styles virtually.
-- 📷 Display a real-time webcam feed.
-- 🧍 Track body landmarks using MediaPipe Pose.
-- 🎨 Render clothing overlays using HTML Canvas.
-- 👖 Provide different outfit combinations.
-- 🔄 Allow users to switch between available outfits.
-- 📸 Capture and download the virtual try-on preview.
-- 📱 Provide a clean and interactive user interface.
+## 🖼️ Screenshots
 
----
+### 1. Hoodie Try-On
 
-## ✨ Key Features
+![Hoodie Try-On Screenshot](OutPut/Screenshot%202026-10-29%20213745.png)
 
-| Feature | Description |
-|---|---|
-| 📷 Live Camera | Displays the user's webcam feed. |
-| 🧍 Pose Detection | Detects body landmarks using MediaPipe Pose. |
-| 👕 Outfit Selection | Allows users to select different clothing designs. |
-| 🎨 Clothing Overlays | Draws virtual garments using canvas shapes and colors. |
-| 🧥 Hoodie Designs | Includes hood shapes, face openings, and drawstrings for selected hoodies. |
-| 👖 Outfit Combinations | Supports selected combinations of tops, pants, shorts, and tracksuits. |
-| 🎭 Clothing Details | Adds selected stripes, buttons, lapels, pockets, and other design details. |
-| 🔄 Camera Switch | Switches cameras where supported by the browser and device. |
-| ♻️ Reset Option | Resets the current outfit selection. |
-| 📸 Capture Look | Captures the current preview as a downloadable image. |
-| 📱 Responsive Interface | Provides an interface designed for different screen sizes. |
+### 2. T-Shirt Try-On
 
----
+![T-Shirt Try-On Screenshot](OutPut/Screenshot%202026-10-29%20213819.png)
 
-## 👗 Available Outfit Collection
+### 3. Full Outfit Preview
 
-The application includes the following outfit designs.
-
-### 👕 T-Shirts and Casual Wear
-
-- ⚫ Black Tee
-- 🌸 Pink Boxy Tee
-- 🔴 Red Graphic Tee
-- 🟡 Yellow Sport Tee
-- 🟣 Purple Oversized Tee
-- ⚪ Striped Tee
-
-### 🧥 Hoodies and Sweatshirts
-
-- 🤍 Cream Hoodie
-- 🫒 Olive Hoodie
-- ⚫ Black Hoodie + Cargo
-- 🍷 Maroon Hoodie + Joggers
-- 🤍 Cream Sweatshirt
-
-### 👔 Shirts, Jackets and Formal Wear
-
-- 🔵 Blue Oxford Shirt
-- 🧥 Denim Jacket + Jeans
-- 🤍 White Shirt + Formal
-- 🕴️ Suit + Trousers
-
-### 👖 Complete Outfit Combinations
-
-- 👖 White Tee + Jeans
-- ⚫ Grey Tee + Black Jeans
-- 🟠 Orange Tee + Cargo
-- 🟢 Green Tee + Shorts
-- 🌿 Mint Tee + Chinos
-- 🔵 Blue Tee + Joggers
-- 🌌 Navy Tracksuit
-- ⚫ All-Black Outfit
-
-*Note: The list represents the intended outfit collection. The exact outfits available depend on the current application code.*
-
----
-
-## 🖥️ Application Screenshots
-
-### 🫒 1. Olive Hoodie
-
-<p align="center">
-  <img src="OutPut/Screenshot 2026-10-29 213745.png" alt="Virtual Fit — Olive Hoodie Preview" width="650"/>
-</p>
-
-Preview the olive hoodie design, including the hood opening, drawstrings, and torso overlay.
-
-### 🌸 2. Pink Boxy Tee
-
-<p align="center">
-  <img src="OutPut/Screenshot 2026-10-29 213819.png" alt="Virtual Fit — Pink Boxy Tee Preview" width="650"/>
-</p>
-
-Preview a pink boxy T-shirt with a colored torso overlay and sleeve shapes.
-
-### ⚫ 3. All-Black Outfit
-
-<p align="center">
-  <img src="OutPut/Screenshot 2026-10-29 213840.png" alt="Virtual Fit — All-Black Outfit Preview" width="650"/>
-</p>
-
-Preview the all-black outfit design using the live camera and virtual clothing overlays.
-
----
+![Full Outfit Preview](OutPut/Screenshot%202026-10-29%20213840.png)
 
 ## 🛠️ Technologies Used
 
 | Technology | Purpose |
 |---|---|
-| 🌐 HTML5 | Defines the application structure. |
-| 🎨 CSS3 | Handles styling, layout, and responsive design. |
-| ⚙️ JavaScript | Implements application logic and interactions. |
-| 🖌️ HTML Canvas API | Draws clothing overlays and creates captured images. |
-| 🧍 MediaPipe Pose | Detects body landmarks in the camera feed. |
-| 📷 WebRTC Camera API | Accesses the webcam through the browser. |
-| 📦 jsDelivr CDN | Loads external libraries when configured in the application. |
+| HTML5 | Application structure |
+| CSS3 | Layout, styling, and responsive interface |
+| JavaScript | Application logic and interactive controls |
+| MediaPipe Pose | Body-pose estimation, if integrated in the application |
+| HTML Canvas | Rendering clothing overlays and visual previews |
+| Web Camera API | Accessing the user's camera |
 
----
+*Verify the actual libraries and versions used in your source code before treating this list as a final dependency inventory.*
 
-## 🧠 How the Application Works
+## ⚙️ How It Works
 
-The application follows a real-time processing workflow.
+The application follows this general workflow:
 
-1. **📷 Camera Initialization:** The browser requests permission to access the webcam.
-2. **🧍 Pose Detection:** MediaPipe Pose detects body landmarks from camera frames.
-3. **📍 Landmark Extraction:** Relevant body coordinates are identified.
-4. **📐 Position Calculation:** Landmark positions help determine where clothing overlays should be drawn.
-5. **🎨 Clothing Rendering:** Canvas shapes are drawn around selected body regions.
-6. **👕 Outfit Selection:** Users can change the clothing design using the outfit carousel.
-7. **📸 Image Capture:** The current camera preview and clothing overlay are combined into a captured image.
+1. The user opens the application in a web browser.
+2. The user grants permission to access the webcam.
+3. The application displays the live camera feed.
+4. Pose estimation identifies relevant body landmarks, if enabled.
+5. JavaScript uses the available landmarks to position and size clothing overlays.
+6. The selected outfit is rendered over the camera preview.
+7. The user switches outfits, resets the preview, or captures an image using the available controls.
 
-### 🔄 Application Workflow
+### Architecture
 
 ```text
-           📷 Webcam Feed
-                 |
-                 v
-       🧍 MediaPipe Pose
-                 |
-                 v
-      📍 Body Landmark Detection
-                 |
-                 v
-       📐 Position Calculation
-                 |
-                 v
-       🎨 Canvas Clothing Overlay
-                 |
-                 v
-        👕 Select Different Outfit
-                 |
-                 v
-       🖥️ Live Virtual Try-On
-                 |
-                 v
-          📸 Capture Look
+User
+ |
+ v
+Web Interface (HTML + CSS)
+ |
+ v
+JavaScript Application
+ |
+ +----------------------+
+ |                      |
+ v                      v
+Webcam Feed        Clothing Selection
+ |                      |
+ v                      |
+Pose Estimation         |
+ |                      |
+ v                      |
+Body Landmarks          |
+ |                      |
+ +----------+-----------+
+            |
+            v
+   Clothing Positioning
+            |
+            v
+     Canvas Rendering
+            |
+            v
+   Virtual Try-On Preview
+            |
+            v
+       User Output
 ```
 
----
+This diagram describes the intended workflow. Actual components depend on the implementation in the repository.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- A modern web browser such as Google Chrome or Microsoft Edge.
+- A webcam for live try-on functionality.
+- A code editor such as Visual Studio Code.
+- An internet connection if the application loads libraries from external CDNs.
+
+### Installation
+
+**Step 1: Clone the repository**
+
+```bash
+git clone https://github.com/avinashreddy0/AI-Virtual-Try-On-Fitting-Room.git
+```
+
+**Step 2: Open the project folder**
+
+```bash
+cd AI-Virtual-Try-On-Fitting-Room
+```
+
+**Step 3: Open the project**
+
+Open the folder in Visual Studio Code.
+
+If the project uses only static HTML, CSS, and JavaScript, you can run it using the VS Code **Live Server** extension. Right-click `index.html` and select **Open with Live Server**.
+
+Alternatively, use another local web server if required by your implementation.
+
+**Step 4: Allow camera access**
+
+Open the application through `localhost` or a secure HTTPS connection, grant camera permission, and test the available controls.
+
+> If the application uses external libraries, make sure the browser can access those resources. Camera access may not work when the page is opened directly using a `file://` URL.
 
 ## 📂 Project Structure
 
@@ -187,199 +147,86 @@ AI-Virtual-Try-On-Fitting-Room/
 │
 ├── index.html
 ├── README.md
+├── LICENSE
 │
 ├── OutPut/
-│   ├── virtual-fit-thumbnail.png
+│   ├── Virtual Fit_ Try On Your Style.png
 │   ├── Screenshot 2026-10-29 213745.png
 │   ├── Screenshot 2026-10-29 213819.png
 │   └── Screenshot 2026-10-29 213840.png
 │
-└── LICENSE
+└── docs/
+    ├── architecture.md
+    ├── technical-report.md
+    ├── third-party-components.md
+    └── known-issues.md
 ```
 
-**Folder descriptions:**
+*This structure assumes that the listed files and folders have been created and committed to the repository. Keep the structure in this README synchronized with the actual files.*
 
-- `index.html` — Main application file, if your current code is contained in a single HTML file.
-- `README.md` — Project documentation.
-- `OutPut/` — Project thumbnail and application screenshots.
-- `LICENSE` — Optional license file to add when you choose your project's distribution terms.
+## 🧪 Testing
 
----
+The application can be tested using the following checklist:
 
-## 🚀 Getting Started
+- [ ] The application loads without errors.
+- [ ] Camera permission can be granted.
+- [ ] The webcam preview displays correctly.
+- [ ] Body-pose tracking works when enabled.
+- [ ] Clothing options can be selected.
+- [ ] Clothing overlays appear in the expected position.
+- [ ] Camera switching works, if supported.
+- [ ] Reset functionality works.
+- [ ] Preview capture works, if supported.
+- [ ] The interface remains usable at different screen sizes.
 
-Follow these steps to run the application locally.
+## ⚠️ Limitations
 
-### 1️⃣ Prerequisites
+- The clothing preview is a 2D overlay rather than a complete 3D garment simulation.
+- Clothing alignment may vary with body position, camera angle, lighting, and distance.
+- Pose detection may be less reliable when body landmarks are obscured.
+- Clothing overlays may not accurately represent garment size, draping, or fabric movement.
+- Camera availability and performance depend on the user's browser and hardware.
+- Actual fit, measurements, and clothing size cannot be guaranteed from the visual preview.
 
-Make sure you have:
+## 🔮 Future Enhancements
 
-- 💻 A computer with a modern web browser.
-- 📷 A working webcam.
-- 🌐 An internet connection if the application loads MediaPipe or other libraries from a CDN.
-- 🐍 Python installed, if you want to use Python's built-in local web server.
-
-### 2️⃣ Open Your Project Folder
-
-Navigate to the project directory:
-
-```text
-C:\Users\indur\OneDrive\Desktop\Ass\AI-Virtual-Try-On-Fitting-Room
-```
-
-### 3️⃣ Start a Local Web Server
-
-Open a terminal in the project folder and run:
-
-```bash
-python -m http.server 8000
-```
-
-Alternatively, on Windows:
-
-```bash
-py -m http.server 8000
-```
-
-### 4️⃣ Open the Application
-
-Open your browser and visit:
-
-```text
-http://localhost:8000
-```
-
-Make sure your main HTML file is named `index.html` and is located in the directory being served.
-
-### 5️⃣ Allow Camera Access
-
-When the browser asks for camera permission, click **Allow**.
-
-The application should then be able to access the camera, subject to browser permissions and device support.
-
----
-
-## 📸 How to Use Virtual Fit
-
-1. 🌐 Open the application in your browser.
-2. 📷 Allow webcam access.
-3. 🧍 Stand in front of the camera so your body is visible.
-4. 👕 Select a clothing item from the outfit carousel.
-5. 🎨 Preview the selected clothing overlay.
-6. 🔄 Switch cameras if the feature is supported and needed.
-7. ♻️ Use Reset to return to the default selection.
-8. 📸 Click **Capture Look** to download the current preview.
-
-💡 **Tip:** Good lighting, a visible upper body, and a clear camera view can improve pose detection and overlay alignment.
-
----
-
-## 📸 Capturing Your Look
-
-The capture feature is designed to save the current virtual try-on preview as an image.
-
-The captured result may include:
-
-- 📷 The camera frame.
-- 👕 The selected clothing overlay.
-- 🎨 The rendered clothing colors and details.
-
-The final result depends on the capture implementation in the current application code.
-
----
-
-## ⚠️ Current Limitations
-
-Virtual Fit is a **2D virtual clothing overlay prototype**, rather than a fully photorealistic AI garment replacement system.
-
-- 🎭 **2D garment rendering:** Clothing is drawn with canvas shapes, so it may look flat rather than like real fabric.
-- 🧍 **Pose accuracy:** Overlays can become misaligned if body landmarks are detected incorrectly or hidden.
-- 🧵 **Fabric simulation:** Realistic folds, wrinkles, and cloth movement are not simulated.
-- 🔄 **Front and back views:** The application does not provide complete 3D garment wrapping or automatic front-to-back garment simulation.
-- ✂️ **Body occlusion:** Arms, hands, and other body parts may not always appear in front of or behind clothing naturally.
-- 📏 **Size accuracy:** The overlay does not determine actual clothing measurements or guarantee a real-world fit.
-- 📱 **Performance:** Tracking quality and frame rate depend on the device, browser, and camera.
-
-These limitations are expected for a canvas-based prototype and can be addressed in future versions.
-
----
-
-## 🔮 Future Improvements
-
-Potential enhancements include:
-
-- 🧠 Integrate an AI virtual try-on model for more realistic clothing replacement.
-- 🧵 Use garment images or 3D clothing assets instead of simple shapes.
-- ✂️ Add body segmentation for more accurate foreground and background layering.
-- 📐 Improve garment scaling and alignment based on body measurements.
-- 🔄 Improve tracking when users rotate or move their bodies.
-- 👗 Allow users to upload their own clothing images.
-- 🪞 Add a more realistic virtual mirror interface.
-- 💾 Add saved outfits and try-on history.
-- 📱 Improve mobile compatibility and performance.
-- 🧪 Add automated tests and more robust error handling.
-
----
+- Improve clothing alignment using more robust body-landmark tracking.
+- Add support for more clothing categories and styles.
+- Improve overlay scaling and positioning across different body shapes.
+- Add more responsive layouts for mobile and desktop devices.
+- Explore segmentation-based clothing overlays.
+- Investigate 3D garment rendering and more realistic fabric simulation.
+- Add optional user preferences and saved outfit selections.
+- Improve accessibility, error handling, and browser compatibility.
 
 ## 🔐 Privacy
 
-- 📷 Camera access requires permission from the user.
-- 🔒 Camera permissions are controlled by the browser.
-- 💾 Captured images can be saved locally through the browser's download feature.
-- 🌐 External libraries may be loaded from a CDN.
+The application requests camera access for its live preview. Users should grant permission only when they intend to use the feature.
 
-The application is not intended to upload webcam footage or captured images to a backend. Verify the actual code and any external dependencies before making stronger privacy claims.
+Do not assume that camera frames are processed exclusively on-device or never stored unless this has been verified in the implementation. Review the source code and any third-party services to confirm the application's actual data-handling behavior.
 
----
+## 📚 Documentation
 
-## 🎓 Learning Outcomes
+Additional project documentation, if included in the repository, is available in the `docs/` folder:
 
-This project provides practical experience with:
-
-- 🧠 Computer vision and pose estimation.
-- 🧍 Body-landmark detection.
-- ⚙️ JavaScript application development.
-- 🎨 Canvas-based graphics rendering.
-- 📷 Browser camera integration.
-- 📐 Coordinate mapping and garment positioning.
-- 🖥️ Interactive and responsive user interfaces.
-- 🛠️ Debugging real-time visual applications.
-
----
-
-## 🤝 Contributing
-
-Contributions, suggestions, and improvements are welcome.
-
-1. 🍴 Fork the repository.
-2. 🌿 Create a new branch for your changes.
-3. 💻 Implement and test your improvements.
-4. 📦 Commit your changes with a clear message.
-5. 🚀 Submit a pull request.
-
----
-
-## 📄 License
-
-This project does not have a specified license in this README yet.
-
-Choose an appropriate open-source license and add its corresponding `LICENSE` file before publishing the project for reuse.
-
----
+- [`Architecture`](docs/architecture.md)
+- [`Technical Report`](docs/technical-report.md)
+- [`Third-Party Components`](docs/third-party-components.md)
+- [`Known Issues`](docs/known-issues.md)
 
 ## 👨‍💻 Author
 
-**Avinash Reddy**
+**Avinash Reddy Induri**
 
-- 💼 LinkedIn: [Connect on LinkedIn](https://linkedin.com/in/avinash-reddy-induri-data-science/)
-- 🐙 GitHub: [Visit GitHub](https://github.com/avinashreddy0)
+- GitHub: [avinashreddy0](https://github.com/avinashreddy0)
+- LinkedIn: [Avinash Reddy Induri](https://linkedin.com/in/avinash-reddy-induri-data-science/)
 
----
+## 📄 License
 
-<p align="center">
-  👕 <strong>Virtual Fit — Explore Your Style, Virtually.</strong> ✨
-</p>
+This project is distributed under the MIT License. See the [`LICENSE`](LICENSE) file for details.
 
-<p align="center">
-  Built with ❤️ using JavaScript, HTML Canvas, and MediaPipe Pose.
-</p>
+## 🙏 Acknowledgements
+
+Thanks to the developers and maintainers of the web technologies and computer-vision libraries used in this project.
+
+Please refer to the actual source code and third-party component documentation for the dependencies and applicable licenses.
